@@ -1,0 +1,59 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://audit-platform/schemas/ingest/v1.json",
+    "title": "LIA Verification Push v1",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["schema_version", "push_id", "generated_at", "activities"],
+    "properties": {
+        "schema_version": { "type": "integer", "const": 1 },
+        "push_id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{8,64}$" },
+        "generated_at": { "type": "string", "format": "date-time" },
+        "activities": {
+            "type": "array",
+            "minItems": 0,
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["activity_key", "lia_version", "entries_since_last"],
+                "properties": {
+                    "activity_key": { "type": "string", "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$", "maxLength": 64 },
+                    "lia_version": { "type": "integer", "minimum": 0 },
+                    "entries_since_last": { "type": "integer", "minimum": 0 },
+                    "total_entries": { "type": "integer", "minimum": 0 },
+                    "latest_entry_at": { "type": ["string", "null"], "format": "date-time" },
+                    "data_origin": { "type": "string", "enum": ["direct", "indirect", "mixed"] },
+                    "article13": {
+                        "type": "array",
+                        "minItems": 0,
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["collection_point", "notice_present", "submissions_since_last"],
+                            "properties": {
+                                "collection_point": { "type": "string", "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$", "maxLength": 64 },
+                                "notice_present": { "type": "boolean" },
+                                "submissions_since_last": { "type": "integer", "minimum": 0 },
+                                "notice_version": { "type": "integer", "minimum": 0 },
+                                "latest_submission_at": { "type": ["string", "null"], "format": "date-time" }
+                            }
+                        }
+                    },
+                    "article14": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["records_acquired_indirectly_since_last", "notices_sent_since_last", "notices_pending"],
+                        "properties": {
+                            "records_acquired_indirectly_since_last": { "type": "integer", "minimum": 0 },
+                            "notices_sent_since_last": { "type": "integer", "minimum": 0 },
+                            "notices_bounced_since_last": { "type": "integer", "minimum": 0 },
+                            "notices_suppressed_since_last": { "type": "integer", "minimum": 0 },
+                            "notices_pending": { "type": "integer", "minimum": 0 },
+                            "latest_notice_at": { "type": ["string", "null"], "format": "date-time" }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

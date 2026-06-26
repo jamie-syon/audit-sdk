@@ -1,0 +1,49 @@
+{
+    "name": "syon/audit-sdk",
+    "description": "Laravel client SDK for pushing LIA verification data to the audit-platform signed ingest API.",
+    "type": "library",
+    "license": "proprietary",
+    "keywords": ["laravel", "audit", "gdpr", "ropa", "sdk"],
+    "require": {
+        "php": "^8.3",
+        "ext-json": "*",
+        "illuminate/support": "^11.0 || ^12.0 || ^13.0",
+        "illuminate/http": "^11.0 || ^12.0 || ^13.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^9.0 || ^10.0 || ^11.0",
+        "pestphp/pest": "^3.0",
+        "opis/json-schema": "^2.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "Syon\\AuditSdk\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Syon\\AuditSdk\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Syon\\AuditSdk\\AuditSdkServiceProvider"
+            ],
+            "aliases": {
+                "Audit": "Syon\\AuditSdk\\Facades\\Audit"
+            }
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        },
+        "sort-packages": true
+    },
+    "scripts": {
+        "test": "pest"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
