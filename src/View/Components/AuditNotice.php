@@ -22,6 +22,6 @@ class AuditNotice extends Component
 
     public function render(): View
     {
-        return view('audit-sdk::notice', ['html' => $this->noticeHtml($this->point)]);
+        return view('audit-sdk::notice', ['html' => $this->resolveNotice($this->point)['html']]);
     }
 }

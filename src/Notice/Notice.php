@@ -12,6 +12,7 @@ class Notice
         public readonly string $collectionPoint,
         public readonly int $version,
         public readonly string $html,
+        public readonly ?string $summary = null,
     ) {}
 
     /**
@@ -19,10 +20,13 @@ class Notice
      */
     public static function fromArray(array $data): self
     {
+        $summary = $data['summary'] ?? null;
+
         return new self(
             (string) ($data['collection_point'] ?? ''),
             (int) ($data['version'] ?? 0),
             (string) ($data['notice'] ?? ''),
+            is_string($summary) && $summary !== '' ? $summary : null,
         );
     }
 }

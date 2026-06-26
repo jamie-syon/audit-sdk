@@ -141,7 +141,22 @@ point of collection, so the live page always matches the approved, versioned cop
 falls back to the last copy held rather than breaking the form, and nothing renders when
 no notice is in force.
 
-There are three ways to surface it, so it always matches your app:
+### Two layers
+
+GDPR notices are usually **layered**: a short statement on the form (the first layer)
+plus the full notice a click away. Both are authored and versioned on the platform:
+
+```blade
+{{-- First layer — a short statement shown right at the point of collection --}}
+<x-audit-notice-summary point="newsletter_signup" />
+<x-audit-notice-dialog point="newsletter_signup" trigger="Read our privacy notice" />
+```
+
+`<x-audit-notice-summary>` renders the managed summary line (nothing if none is set), and
+the trigger opens the full notice. Surface the link as a **visible first layer, not a buried
+link** — the statement should be easy to see before the form is submitted.
+
+### Ways to render the full notice
 
 **1. Inline content** — `<x-audit-notice>` is the reusable atom: it renders the notice
 HTML in a div. Drop it on the page, or *inside any modal*.

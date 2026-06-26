@@ -10,6 +10,7 @@ use Syon\AuditSdk\Client\RequestSigner;
 use Syon\AuditSdk\Console\CatalogueCommand;
 use Syon\AuditSdk\View\Components\AuditNotice;
 use Syon\AuditSdk\View\Components\AuditNoticeDialog;
+use Syon\AuditSdk\View\Components\AuditNoticeSummary;
 
 class AuditSdkServiceProvider extends ServiceProvider
 {
@@ -37,6 +38,7 @@ class AuditSdkServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'audit-sdk');
         Blade::component('audit-notice', AuditNotice::class);
         Blade::component('audit-notice-dialog', AuditNoticeDialog::class);
+        Blade::component('audit-notice-summary', AuditNoticeSummary::class);
 
         if ($this->app->runningInConsole()) {
             $this->commands([CatalogueCommand::class]);

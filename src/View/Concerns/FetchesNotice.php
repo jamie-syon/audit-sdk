@@ -8,34 +8,41 @@ use Syon\AuditSdk\Client\AuditClient;
 /**
  * Shared notice retrieval for the view components: cached (config: audit-sdk.notice_ttl)
  * so it isn't fetched on every render, and fail-soft — a transient platform outage falls
- * back to the last known copy rather than breaking the page. Returns null when no notice
- * is in force for the point.
+ * back to the last known copy rather than breaking the page.
  */
 trait FetchesNotice
 {
-    protected function noticeHtml(string $point): ?string
+    /**
+     * The notice's first-layer summary and full HTML for a point. Either may be null
+     * (no notice in force, or no summary authored).
+     *
+     * @return array{html: string|null, summary: string|null}
+     */
+    protected function resolveNotice(string $point): array
     {
         $client = app(AuditClient::class);
         $key = 'audit-sdk:notice:'.$client->projectId().':'.$point;
         $ttl = (int) config('audit-sdk.notice_ttl', 300);
 
-        // Within the fresh window, serve the cached copy ('' means "no notice in force",
-        // cached too so we don't re-hit the endpoint on every render).
         $fresh = Cache::get($key);
-        if ($fresh !== null) {
-            return $fresh === '' ? null : $fresh;
+        if (is_array($fresh)) {
+            return $fresh;
         }
 
         try {
-            $html = $client->notice($point)?->html ?? '';
-            Cache::put($key, $html, $ttl);
-            Cache::forever($key.':last', $html); // last-known fallback
+            $notice = $client->notice($point);
+            $data = [
+                'html' => ($notice?->html ?? '') !== '' ? $notice->html : null,
+                'summary' => $notice?->summary,
+            ];
+            Cache::put($key, $data, $ttl);
+            Cache::forever($key.':last', $data); // last-known fallback
         } catch (\Throwable) {
             $last = Cache::get($key.':last');
 
-            return is_string($last) && $last !== '' ? $last : null;
+            return is_array($last) ? $last : ['html' => null, 'summary' => null];
         }
 
-        return $html === '' ? null : $html;
+        return $data;
     }
 }
