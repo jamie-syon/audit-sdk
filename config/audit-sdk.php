@@ -46,4 +46,17 @@ return [
 
     'retries' => (int) env('AUDIT_SDK_RETRIES', 2),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Notice cache
+    |--------------------------------------------------------------------------
+    |
+    | How long (seconds) the <x-audit-notice> component caches a fetched notice
+    | before re-checking the platform. The last fetched copy is also kept as a
+    | fail-soft fallback if the platform is briefly unreachable.
+    |
+    */
+
+    'notice_ttl' => (int) env('AUDIT_SDK_NOTICE_TTL', 300),
+
 ];

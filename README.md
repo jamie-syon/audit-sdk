@@ -122,6 +122,38 @@ foreach ($catalogue->activities as $activity) {
 > detect when you've fallen behind an in-force LIA. The catalogue is read-only and
 > never wired into the push path.
 
+## Rendering notices on your forms
+
+The platform is the source of truth for your Article 13 notice copy — you author,
+seal and adopt it there. Render the in-force notice straight onto the form at its
+point of collection, so the live page always matches the approved, versioned copy:
+
+```blade
+<form method="POST" action="/contact">
+    @csrf
+    <x-audit-notice point="newsletter_signup" />
+    {{-- your fields --}}
+</form>
+```
+
+`point` is the collection-point slug from the catalogue. The component fetches the
+in-force notice for it and renders the HTML. It's **cached** (`audit-sdk.notice_ttl`,
+default 300s) so it isn't fetched on every render, and **fail-soft** — a transient
+platform outage falls back to the last copy it held rather than breaking the form.
+It renders nothing when no notice is in force for that point.
+
+Programmatically:
+
+```php
+$notice = Audit::notice('newsletter_signup');   // ?Syon\AuditSdk\Notice\Notice
+$notice?->html;        // the approved Article 13 copy
+$notice?->version;     // the in-force version
+```
+
+> The notice HTML is authored and sealed by your own people on the platform, so the
+> component renders it unescaped (trusted content). Publish the view to customise the
+> wrapper: `php artisan vendor:publish --tag=audit-sdk-views`.
+
 ## Payload reference
 
 Mirrors the platform's `ingest-v1` schema:

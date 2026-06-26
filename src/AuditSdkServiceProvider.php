@@ -3,10 +3,12 @@
 namespace Syon\AuditSdk;
 
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Syon\AuditSdk\Client\AuditClient;
 use Syon\AuditSdk\Client\RequestSigner;
 use Syon\AuditSdk\Console\CatalogueCommand;
+use Syon\AuditSdk\View\Components\AuditNotice;
 
 class AuditSdkServiceProvider extends ServiceProvider
 {
@@ -31,12 +33,19 @@ class AuditSdkServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'audit-sdk');
+        Blade::component('audit-notice', AuditNotice::class);
+
         if ($this->app->runningInConsole()) {
             $this->commands([CatalogueCommand::class]);
 
             $this->publishes([
                 __DIR__.'/../config/audit-sdk.php' => $this->app->configPath('audit-sdk.php'),
             ], 'audit-sdk-config');
+
+            $this->publishes([
+                __DIR__.'/../resources/views' => $this->app->resourcePath('views/vendor/audit-sdk'),
+            ], 'audit-sdk-views');
         }
     }
 }

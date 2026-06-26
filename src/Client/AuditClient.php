@@ -6,6 +6,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Syon\AuditSdk\Catalogue\Catalogue;
 use Syon\AuditSdk\Exceptions\TransportException;
+use Syon\AuditSdk\Notice\Notice;
 use Syon\AuditSdk\Payload\PushPayload;
 use Syon\AuditSdk\Responses\IngestResult;
 
@@ -98,6 +99,42 @@ class AuditClient
         }
 
         return Catalogue::fromArray((array) $response->json());
+    }
+
+    /**
+     * Fetch the in-force Article 13 notice for a collection point, to render at the
+     * point of collection. Returns null when the platform has no notice in force for
+     * it (HTTP 404).
+     */
+    public function notice(string $collectionPoint): ?Notice
+    {
+        $signed = $this->signer->sign('');
+
+        try {
+            $response = Http::baseUrl($this->baseUrl)
+                ->timeout($this->timeout)
+                ->withHeaders([
+                    'X-Timestamp' => $signed['timestamp'],
+                    'X-Signature' => $signed['signature'],
+                ])
+                ->retry(max(1, $this->retries), 200, throw: false)
+                ->get('/notice/'.$this->projectId.'/'.rawurlencode($collectionPoint));
+        } catch (ConnectionException $e) {
+            throw new TransportException(
+                "Could not reach the audit platform at {$this->baseUrl}: {$e->getMessage()}",
+                previous: $e,
+            );
+        }
+
+        if ($response->status() === 404) {
+            return null;
+        }
+
+        if ($response->status() !== 200) {
+            throw new TransportException("Notice request failed ({$response->status()}).");
+        }
+
+        return Notice::fromArray((array) $response->json());
     }
 
     public function projectId(): string
