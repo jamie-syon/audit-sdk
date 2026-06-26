@@ -5,11 +5,13 @@
         {{ $trigger }}
     </button>
 
+    {{-- No nested <form> here: this component is meant to sit inside a form (notices
+         live at the point of collection), so closing is handled in JS, not method="dialog". --}}
     <dialog class="audit-notice-dialog" data-audit-notice-dialog="{{ $point }}">
         <div class="audit-notice-content">{!! $html !!}</div>
-        <form method="dialog" class="audit-notice-actions">
-            <button type="submit" class="audit-notice-close">Close</button>
-        </form>
+        <div class="audit-notice-actions">
+            <button type="button" class="audit-notice-close" data-audit-notice-close>Close</button>
+        </div>
     </dialog>
 
     @once
@@ -22,15 +24,28 @@
             .audit-notice-close { font: inherit; cursor: pointer; border: 1px solid #d4d4d8; background: #fff; border-radius: .5rem; padding: .375rem .85rem; }
         </style>
         <script>
-            // Delegated + CSP-safe: open the matching dialog when its trigger is clicked.
+            // Delegated + CSP-safe. Open on the trigger, close on the close button or a
+            // backdrop click; ESC-to-close is handled natively by <dialog>.
             document.addEventListener('click', function (event) {
                 var trigger = event.target.closest('[data-audit-notice-trigger]');
-                if (! trigger) { return; }
-                var point = trigger.getAttribute('data-audit-notice-trigger');
-                var dialog = document.querySelector('[data-audit-notice-dialog="' + point + '"]');
-                if (dialog && typeof dialog.showModal === 'function') {
-                    event.preventDefault();
-                    dialog.showModal();
+                if (trigger) {
+                    var point = trigger.getAttribute('data-audit-notice-trigger');
+                    var dialog = document.querySelector('[data-audit-notice-dialog="' + point + '"]');
+                    if (dialog && typeof dialog.showModal === 'function') {
+                        event.preventDefault();
+                        dialog.showModal();
+                    }
+                    return;
+                }
+                var closer = event.target.closest('[data-audit-notice-close]');
+                if (closer) {
+                    var owning = closer.closest('dialog');
+                    if (owning) { owning.close(); }
+                    return;
+                }
+                // A click on the dialog element itself (its backdrop, not its content) closes it.
+                if (event.target.classList && event.target.classList.contains('audit-notice-dialog')) {
+                    event.target.close();
                 }
             });
         </script>
