@@ -85,6 +85,43 @@ platform can't be reached after retries, and
 `Syon\AuditSdk\Exceptions\InvalidPayloadException` if a builder is given a value
 the schema would reject (raised locally, before any network call).
 
+## Discovering what to push
+
+The platform knows the canonical activity keys and collection-point slugs it
+expects, plus the in-force LIA version per activity. Read that catalogue to
+configure your pushes correctly:
+
+```bash
+php artisan audit:catalogue
+```
+
+```
++-----------------+-----------------+--------------+-------------------+
+| Activity key    | Name            | In-force LIA | Collection points |
++-----------------+-----------------+--------------+-------------------+
+| email_marketing | Email marketing | v5           | newsletter_signup |
+| analytics       | Analytics       | —            | —                 |
++-----------------+-----------------+--------------+-------------------+
+```
+
+Add `--json` for machine-readable output. Programmatically:
+
+```php
+$catalogue = Audit::catalogue();           // Syon\AuditSdk\Catalogue\Catalogue
+foreach ($catalogue->activities as $activity) {
+    $activity->activityKey;        // 'email_marketing'
+    $activity->liaVersionInForce;  // 5 or null
+    $activity->collectionPoints;   // ['newsletter_signup']
+}
+```
+
+> **Important — this is a *configuration-time* aid, not a runtime feed.** Use it
+> to align the **keys and slugs** you report under. Do **not** copy
+> `liaVersionInForce` into the `lia_version` you push: that value must reflect the
+> version your application actually operates under, so the platform can still
+> detect when you've fallen behind an in-force LIA. The catalogue is read-only and
+> never wired into the push path.
+
 ## Payload reference
 
 Mirrors the platform's `ingest-v1` schema:

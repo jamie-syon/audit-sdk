@@ -6,6 +6,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use Syon\AuditSdk\Client\AuditClient;
 use Syon\AuditSdk\Client\RequestSigner;
+use Syon\AuditSdk\Console\CatalogueCommand;
 
 class AuditSdkServiceProvider extends ServiceProvider
 {
@@ -31,6 +32,8 @@ class AuditSdkServiceProvider extends ServiceProvider
     public function boot(): void
     {
         if ($this->app->runningInConsole()) {
+            $this->commands([CatalogueCommand::class]);
+
             $this->publishes([
                 __DIR__.'/../config/audit-sdk.php' => $this->app->configPath('audit-sdk.php'),
             ], 'audit-sdk-config');
