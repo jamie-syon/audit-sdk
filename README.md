@@ -136,13 +136,38 @@ point of collection, so the live page always matches the approved, versioned cop
 </form>
 ```
 
-`point` is the collection-point slug from the catalogue. The component fetches the
-in-force notice for it and renders the HTML. It's **cached** (`audit-sdk.notice_ttl`,
-default 300s) so it isn't fetched on every render, and **fail-soft** — a transient
-platform outage falls back to the last copy it held rather than breaking the form.
-It renders nothing when no notice is in force for that point.
+`point` is the collection-point slug from the catalogue. Rendering is **cached**
+(`audit-sdk.notice_ttl`, default 300s) and **fail-soft** — a transient platform outage
+falls back to the last copy held rather than breaking the form, and nothing renders when
+no notice is in force.
 
-Programmatically:
+There are three ways to surface it, so it always matches your app:
+
+**1. Inline content** — `<x-audit-notice>` is the reusable atom: it renders the notice
+HTML in a div. Drop it on the page, or *inside any modal*.
+
+**2. Link → native dialog** (no frontend framework needed):
+
+```blade
+<x-audit-notice-dialog point="newsletter_signup" trigger="Privacy notice" />
+```
+
+A trigger link plus a native HTML `<dialog>` — works on any stack (Bootstrap, vanilla,
+TALL) with zero dependencies. The `<dialog>` gives the backdrop, ESC-to-close and focus
+handling natively; ships scoped, publishable CSS.
+
+**3. Your own modal** — for a notice styled exactly like your design system, use your own
+trigger + modal and put the atom inside it. The SDK still handles fetch/cache/fail-soft:
+
+```blade
+{{-- e.g. a FluxUI (TALL) app --}}
+<flux:modal.trigger name="privacy"><flux:link>Privacy notice</flux:link></flux:modal.trigger>
+<flux:modal name="privacy">
+    <x-audit-notice point="newsletter_signup" />
+</flux:modal>
+```
+
+Programmatically (or for a Vue/React frontend), fetch it as data:
 
 ```php
 $notice = Audit::notice('newsletter_signup');   // ?Syon\AuditSdk\Notice\Notice
@@ -151,8 +176,8 @@ $notice?->version;     // the in-force version
 ```
 
 > The notice HTML is authored and sealed by your own people on the platform, so the
-> component renders it unescaped (trusted content). Publish the view to customise the
-> wrapper: `php artisan vendor:publish --tag=audit-sdk-views`.
+> components render it unescaped (trusted content). Publish the views to customise the
+> wrapper/dialog: `php artisan vendor:publish --tag=audit-sdk-views`.
 
 ## Payload reference
 

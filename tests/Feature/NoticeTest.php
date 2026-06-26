@@ -52,6 +52,27 @@ it('renders nothing when the collection point has no notice', function () {
     expect(trim(Blade::render('<x-audit-notice point="unmapped_point" />')))->toBe('');
 });
 
+it('renders a trigger link and native dialog via <x-audit-notice-dialog>', function () {
+    Http::fake(['platform.test/notice/*' => Http::response([
+        'collection_point' => 'newsletter_signup', 'version' => 1, 'notice' => '<p>We use your email.</p>',
+    ], 200)]);
+
+    $html = Blade::render('<x-audit-notice-dialog point="newsletter_signup" trigger="Privacy notice" />');
+
+    expect($html)->toContain('data-audit-notice-trigger="newsletter_signup"')
+        ->and($html)->toContain('Privacy notice')
+        ->and($html)->toContain('<dialog')
+        ->and($html)->toContain('data-audit-notice-dialog="newsletter_signup"')
+        ->and($html)->toContain('We use your email.')
+        ->and($html)->toContain('showModal'); // the self-contained vanilla JS
+});
+
+it('renders nothing from the dialog when there is no notice', function () {
+    Http::fake(['platform.test/*' => Http::response(['error' => 'no_notice'], 404)]);
+
+    expect(trim(Blade::render('<x-audit-notice-dialog point="unmapped_point" />')))->toBe('');
+});
+
 it('falls back to the last known copy when the platform is unreachable', function () {
     // First render caches the copy.
     Http::fake(['platform.test/notice/*' => Http::response([
