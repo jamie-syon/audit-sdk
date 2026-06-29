@@ -25,7 +25,7 @@ function fakeNoticesResponse(): array
                 'type' => 'article13',
                 'version' => 3,
                 'summary' => 'We email you.',
-                'notice' => '<p>Email notice.</p>',
+                'notice' => '<h2>What we collect</h2><p>Email notice.</p>',
             ],
         ],
     ];
@@ -42,7 +42,7 @@ it('fetches every in-force notice for the project with a signed GET', function (
         ->and($notices[1]->activity)->toBe('Email marketing')
         ->and($notices[1]->version)->toBe(3)
         ->and($notices[1]->summary)->toBe('We email you.')
-        ->and($notices[1]->html)->toBe('<p>Email notice.</p>');
+        ->and($notices[1]->html)->toBe('<h2>What we collect</h2><p>Email notice.</p>');
 
     Http::assertSent(fn ($request) => $request->hasHeader('X-Signature') && str_contains($request->url(), '/notices/proj_123'));
 });
@@ -69,4 +69,23 @@ it('renders nothing when the project has no notices', function () {
     Http::fake(['platform.test/notices/*' => Http::response(['project' => 'proj_123', 'notices' => []], 200)]);
 
     expect(trim(Blade::render('<x-audit-notices />')))->toBe('');
+});
+
+it('renders activity names as <h2> and pushes the copy headings down to <h3>', function () {
+    Http::fake(['platform.test/notices/*' => Http::response(fakeNoticesResponse(), 200)]);
+
+    $html = Blade::render('<x-audit-notices />');
+
+    expect($html)->toContain('<h2>Email marketing</h2>')   // activity at the section level
+        ->and($html)->toContain('<h3>What we collect</h3>') // copy heading nested beneath it
+        ->and($html)->not->toContain('<h2>What we collect</h2>');
+});
+
+it('nests deeper when given a higher level', function () {
+    Http::fake(['platform.test/notices/*' => Http::response(fakeNoticesResponse(), 200)]);
+
+    $html = Blade::render('<x-audit-notices :level="3" />');
+
+    expect($html)->toContain('<h3>Email marketing</h3>')   // activity at h3
+        ->and($html)->toContain('<h4>What we collect</h4>'); // copy heading shifted to h4
 });

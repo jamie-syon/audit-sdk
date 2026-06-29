@@ -254,6 +254,11 @@ or 14 copy), in lockstep with what's adopted on the platform. It's **per activit
 form** — so notices aren't repeated across collection points, and activities with no form
 (indirect/Article 14 processing) are still included. Cached and fail-soft like the others.
 
+The activity name is an `<h2>` and the copy's own headings are pushed down to `<h3>` so the
+document outline stays correct. Embedding deeper in your page? Pass `:level` to rebase the
+whole block — `<x-audit-notices :level="3" />` renders activity names as `<h3>` and copy
+headings as `<h4>`.
+
 The platform owns the *per-activity processing copy*; the *controller-level* content
 (your identity, DPO, the rights section, how to complain to the supervisory authority)
 stays yours — wrap the component with it.
