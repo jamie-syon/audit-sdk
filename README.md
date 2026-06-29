@@ -85,6 +85,47 @@ platform can't be reached after retries, and
 `Syon\AuditSdk\Exceptions\InvalidPayloadException` if a builder is given a value
 the schema would reject (raised locally, before any network call).
 
+## Sending pushes on a schedule
+
+The platform's liveness check expects a push on your cadence **even when idle** — silence
+is read as *broken*, not *quiet*. So wire pushing into your scheduler. The SDK owns the
+plumbing (build → sign → send → map result); you supply only *what to count*, since only
+your app knows that.
+
+Implement `ProvidesPushPayload` and bind it in a service provider:
+
+```php
+use Syon\AuditSdk\Contracts\ProvidesPushPayload;
+use Syon\AuditSdk\Payload\{PushPayload, ActivityReport};
+
+class MyPushPayload implements ProvidesPushPayload
+{
+    public function build(): PushPayload
+    {
+        return PushPayload::make()->addActivity(
+            ActivityReport::for('email_marketing')
+                ->liaVersion(3)                          // the version you actually operate under
+                ->entriesSinceLast($this->countSinceLastPush())
+        );
+    }
+}
+
+// In a service provider:
+$this->app->bind(ProvidesPushPayload::class, MyPushPayload::class);
+```
+
+Then schedule the command on your cadence:
+
+```php
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('audit:push')->daily()->withoutOverlapping();
+```
+
+`php artisan audit:push` builds the payload, sends it, and **exits non-zero** on any failure
+(unbound provider, rejected payload, bad signature, unreachable platform) — so cron/CI alerting
+catches a broken push. Run it by hand any time to send immediately.
+
 ## Discovering what to push
 
 The platform knows the canonical activity keys and collection-point slugs it

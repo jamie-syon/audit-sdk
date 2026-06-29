@@ -8,6 +8,7 @@ use Illuminate\Support\ServiceProvider;
 use Syon\AuditSdk\Client\AuditClient;
 use Syon\AuditSdk\Client\RequestSigner;
 use Syon\AuditSdk\Console\CatalogueCommand;
+use Syon\AuditSdk\Console\PushCommand;
 use Syon\AuditSdk\View\Components\AuditNotice;
 use Syon\AuditSdk\View\Components\AuditNoticeDialog;
 use Syon\AuditSdk\View\Components\AuditNoticeSummary;
@@ -41,7 +42,7 @@ class AuditSdkServiceProvider extends ServiceProvider
         Blade::component('audit-notice-summary', AuditNoticeSummary::class);
 
         if ($this->app->runningInConsole()) {
-            $this->commands([CatalogueCommand::class]);
+            $this->commands([CatalogueCommand::class, PushCommand::class]);
 
             $this->publishes([
                 __DIR__.'/../config/audit-sdk.php' => $this->app->configPath('audit-sdk.php'),
