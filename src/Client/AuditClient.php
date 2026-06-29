@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Http;
 use Syon\AuditSdk\Catalogue\Catalogue;
 use Syon\AuditSdk\Exceptions\TransportException;
 use Syon\AuditSdk\Notice\Notice;
+use Syon\AuditSdk\Notice\PolicyNotice;
 use Syon\AuditSdk\Payload\PushPayload;
 use Syon\AuditSdk\Responses\IngestResult;
 
@@ -135,6 +136,46 @@ class AuditClient
         }
 
         return Notice::fromArray((array) $response->json());
+    }
+
+    /**
+     * Fetch every in-force notice for the project (Article 13 + 14, one per activity),
+     * to render a consolidated privacy policy. Returns an empty array when none are in
+     * force.
+     *
+     * @return list<PolicyNotice>
+     */
+    public function notices(): array
+    {
+        $signed = $this->signer->sign('');
+
+        try {
+            $response = Http::baseUrl($this->baseUrl)
+                ->timeout($this->timeout)
+                ->withHeaders([
+                    'X-Timestamp' => $signed['timestamp'],
+                    'X-Signature' => $signed['signature'],
+                ])
+                ->retry(max(1, $this->retries), 200, throw: false)
+                ->get('/notices/'.$this->projectId);
+        } catch (ConnectionException $e) {
+            throw new TransportException(
+                "Could not reach the audit platform at {$this->baseUrl}: {$e->getMessage()}",
+                previous: $e,
+            );
+        }
+
+        if ($response->status() !== 200) {
+            throw new TransportException("Notices request failed ({$response->status()}).");
+        }
+
+        $body = (array) $response->json();
+        $items = is_array($body['notices'] ?? null) ? $body['notices'] : [];
+
+        return array_values(array_map(
+            static fn (array $notice): PolicyNotice => PolicyNotice::fromArray($notice),
+            $items,
+        ));
     }
 
     public function projectId(): string

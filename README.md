@@ -235,6 +235,41 @@ $notice?->version;     // the in-force version
 > components render it unescaped (trusted content). Publish the views to customise the
 > wrapper/dialog: `php artisan vendor:publish --tag=audit-sdk-views`.
 
+## A consolidated privacy policy
+
+The form components above are the *point-of-collection* layer. For the **comprehensive
+layer** — a privacy policy listing all your processing — render every in-force notice at
+once:
+
+```blade
+{{-- In your privacy policy page --}}
+<h1>Privacy policy</h1>
+{{-- your controller identity, DPO, rights, how to complain… --}}
+
+<x-audit-notices />
+```
+
+`<x-audit-notices>` renders one section per processing activity (its approved Article 13
+or 14 copy), in lockstep with what's adopted on the platform. It's **per activity, not per
+form** — so notices aren't repeated across collection points, and activities with no form
+(indirect/Article 14 processing) are still included. Cached and fail-soft like the others.
+
+The platform owns the *per-activity processing copy*; the *controller-level* content
+(your identity, DPO, the rights section, how to complain to the supervisory authority)
+stays yours — wrap the component with it.
+
+Programmatically:
+
+```php
+$notices = Audit::notices();         // list<Syon\AuditSdk\Notice\PolicyNotice>
+foreach ($notices as $notice) {
+    $notice->activity;   // 'Email marketing'
+    $notice->type;       // 'article13' | 'article14'
+    $notice->version;    // in-force version
+    $notice->html;       // approved copy
+}
+```
+
 ## Payload reference
 
 Mirrors the platform's `ingest-v1` schema:

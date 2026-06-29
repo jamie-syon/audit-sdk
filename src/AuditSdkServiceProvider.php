@@ -11,6 +11,7 @@ use Syon\AuditSdk\Console\CatalogueCommand;
 use Syon\AuditSdk\Console\PushCommand;
 use Syon\AuditSdk\View\Components\AuditNotice;
 use Syon\AuditSdk\View\Components\AuditNoticeDialog;
+use Syon\AuditSdk\View\Components\AuditNotices;
 use Syon\AuditSdk\View\Components\AuditNoticeSummary;
 
 class AuditSdkServiceProvider extends ServiceProvider
@@ -40,6 +41,7 @@ class AuditSdkServiceProvider extends ServiceProvider
         Blade::component('audit-notice', AuditNotice::class);
         Blade::component('audit-notice-dialog', AuditNoticeDialog::class);
         Blade::component('audit-notice-summary', AuditNoticeSummary::class);
+        Blade::component('audit-notices', AuditNotices::class);
 
         if ($this->app->runningInConsole()) {
             $this->commands([CatalogueCommand::class, PushCommand::class]);

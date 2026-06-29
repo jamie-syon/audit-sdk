@@ -4,6 +4,7 @@ namespace Syon\AuditSdk\View\Concerns;
 
 use Illuminate\Support\Facades\Cache;
 use Syon\AuditSdk\Client\AuditClient;
+use Syon\AuditSdk\Notice\PolicyNotice;
 
 /**
  * Shared notice retrieval for the view components: cached (config: audit-sdk.notice_ttl)
@@ -41,6 +42,44 @@ trait FetchesNotice
             $last = Cache::get($key.':last');
 
             return is_array($last) ? $last : ['html' => null, 'summary' => null];
+        }
+
+        return $data;
+    }
+
+    /**
+     * Every in-force notice for the project, for a consolidated privacy policy. Cached
+     * and fail-soft, like resolveNotice(). Each row is one activity's approved copy.
+     *
+     * @return list<array{activity_key: string, activity: string, purpose: string|null, type: string, version: int, summary: string|null, html: string}>
+     */
+    protected function resolveNoticeList(): array
+    {
+        $client = app(AuditClient::class);
+        $key = 'audit-sdk:notices:'.$client->projectId();
+        $ttl = (int) config('audit-sdk.notice_ttl', 300);
+
+        $fresh = Cache::get($key);
+        if (is_array($fresh)) {
+            return $fresh;
+        }
+
+        try {
+            $data = array_map(static fn (PolicyNotice $notice): array => [
+                'activity_key' => $notice->activityKey,
+                'activity' => $notice->activity,
+                'purpose' => $notice->purpose,
+                'type' => $notice->type,
+                'version' => $notice->version,
+                'summary' => $notice->summary,
+                'html' => $notice->html,
+            ], $client->notices());
+            Cache::put($key, $data, $ttl);
+            Cache::forever($key.':last', $data); // last-known fallback
+        } catch (\Throwable) {
+            $last = Cache::get($key.':last');
+
+            return is_array($last) ? $last : [];
         }
 
         return $data;
