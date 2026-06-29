@@ -109,3 +109,23 @@ it('prepends a jump-link contents list when :toc is set', function () {
         ->and($html)->toContain('href="#notice-email_marketing"')
         ->and($html)->toContain('id="notice-email_marketing"'); // the link target exists
 });
+
+it('wraps each activity in an exclusive <details> when :collapsible, with the jump target on the summary', function () {
+    Http::fake(['platform.test/notices/*' => Http::response(fakeNoticesResponse(), 200)]);
+
+    $html = Blade::render('<x-audit-notices :collapsible="true" :toc="true" />');
+
+    expect($html)->toContain('<details name="audit-notices"')          // exclusive group → one open at a time
+        ->and($html)->toContain('<summary id="notice-email_marketing">') // jump target inside the details → auto-expands
+        ->and($html)->toContain('<h2>Email marketing</h2>')              // activity heading lives in the summary
+        ->and($html)->not->toContain('<section id="notice-email_marketing"');
+});
+
+it('renders plain sections (no <details>) when not collapsible', function () {
+    Http::fake(['platform.test/notices/*' => Http::response(fakeNoticesResponse(), 200)]);
+
+    $html = Blade::render('<x-audit-notices />');
+
+    expect($html)->toContain('<section id="notice-email_marketing"')
+        ->and($html)->not->toContain('<details');
+});

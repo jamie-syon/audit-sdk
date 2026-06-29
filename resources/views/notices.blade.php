@@ -12,10 +12,19 @@
             </nav>
         @endif
         @foreach ($notices as $notice)
-            <section id="notice-{{ $notice['activity_key'] }}" class="audit-notice" data-audit-notice-activity="{{ $notice['activity_key'] }}">
-                <{{ $tag }}>{{ $notice['activity'] }}</{{ $tag }}>
-                {!! $notice['html'] !!}
-            </section>
+            @if ($collapsible)
+                {{-- Native <details>: zero-JS, one open at a time via name=. The id sits on the
+                     <summary> so a jump link auto-expands and scrolls to it. --}}
+                <details name="audit-notices" class="audit-notice" data-audit-notice-activity="{{ $notice['activity_key'] }}">
+                    <summary id="notice-{{ $notice['activity_key'] }}"><{{ $tag }}>{{ $notice['activity'] }}</{{ $tag }}></summary>
+                    {!! $notice['html'] !!}
+                </details>
+            @else
+                <section id="notice-{{ $notice['activity_key'] }}" class="audit-notice" data-audit-notice-activity="{{ $notice['activity_key'] }}">
+                    <{{ $tag }}>{{ $notice['activity'] }}</{{ $tag }}>
+                    {!! $notice['html'] !!}
+                </section>
+            @endif
         @endforeach
     </div>
 @endif

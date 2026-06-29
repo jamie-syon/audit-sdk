@@ -268,6 +268,17 @@ a jump-link contents list:
 
 The `<nav class="audit-notices-toc">` is unstyled markup — style it to taste in your own CSS.
 
+For a long policy, `:collapsible` makes each activity a native `<details>` (no JavaScript),
+exclusive so **one is open at a time**, with the jump target on the `<summary>` so contents-list
+links auto-expand and scroll to it:
+
+```blade
+<x-audit-notices :toc="true" :collapsible="true" />
+```
+
+> Collapsed content isn't reliably found by in-page search (Ctrl+F) and won't print expanded —
+> a trade-off to weigh for a legal document. Leave it off to keep every notice on the page.
+
 The platform owns the *per-activity processing copy*; the *controller-level* content
 (your identity, DPO, the rights section, how to complain to the supervisory authority)
 stays yours — wrap the component with it.

@@ -10,9 +10,10 @@ use Syon\AuditSdk\View\Concerns\FetchesNotice;
  * Renders every in-force notice for the project as a stack of sections — the
  * comprehensive layer, for a consolidated privacy policy:
  *
- *     <x-audit-notices />              {{-- activity names as <h2>, body titles as <h3> --}}
- *     <x-audit-notices :level="3" />   {{-- nest deeper: activity <h3>, body titles <h4> --}}
- *     <x-audit-notices :toc="true" />  {{-- prepend a jump-link contents list --}}
+ *     <x-audit-notices />                    {{-- activity names as <h2>, body titles as <h3> --}}
+ *     <x-audit-notices :level="3" />         {{-- nest deeper: activity <h3>, body titles <h4> --}}
+ *     <x-audit-notices :toc="true" />        {{-- prepend a jump-link contents list --}}
+ *     <x-audit-notices :collapsible="true" />{{-- each activity a <details>, one open at a time --}}
  *
  * Each section is one processing activity's approved Article 13/14 copy. The activity
  * name is rendered at $level and the copy's own headings are pushed down to sit beneath
@@ -24,7 +25,11 @@ class AuditNotices extends Component
 {
     use FetchesNotice;
 
-    public function __construct(public int $level = 2, public bool $toc = false) {}
+    public function __construct(
+        public int $level = 2,
+        public bool $toc = false,
+        public bool $collapsible = false,
+    ) {}
 
     public function render(): View
     {
@@ -38,7 +43,12 @@ class AuditNotices extends Component
             return $notice;
         }, $this->resolveNoticeList());
 
-        return view('audit-sdk::notices', ['notices' => $notices, 'level' => $this->level, 'toc' => $this->toc]);
+        return view('audit-sdk::notices', [
+            'notices' => $notices,
+            'level' => $this->level,
+            'toc' => $this->toc,
+            'collapsible' => $this->collapsible,
+        ]);
     }
 
     /** Push every heading in the copy down by $by levels (capped at h6). */
