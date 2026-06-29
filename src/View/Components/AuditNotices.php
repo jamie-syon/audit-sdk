@@ -12,17 +12,19 @@ use Syon\AuditSdk\View\Concerns\FetchesNotice;
  *
  *     <x-audit-notices />              {{-- activity names as <h2>, body titles as <h3> --}}
  *     <x-audit-notices :level="3" />   {{-- nest deeper: activity <h3>, body titles <h4> --}}
+ *     <x-audit-notices :toc="true" />  {{-- prepend a jump-link contents list --}}
  *
  * Each section is one processing activity's approved Article 13/14 copy. The activity
  * name is rendered at $level and the copy's own headings are pushed down to sit beneath
- * it, so the document outline stays correct wherever you embed it. Cached and fail-soft.
- * Wrap it with your own controller-level content (identity, DPO, rights, complaints).
+ * it, so the document outline stays correct wherever you embed it. Every section gets a
+ * stable id (notice-{activity_key}) for deep-linking. Cached and fail-soft. Wrap it with
+ * your own controller-level content (identity, DPO, rights, complaints).
  */
 class AuditNotices extends Component
 {
     use FetchesNotice;
 
-    public function __construct(public int $level = 2) {}
+    public function __construct(public int $level = 2, public bool $toc = false) {}
 
     public function render(): View
     {
@@ -36,7 +38,7 @@ class AuditNotices extends Component
             return $notice;
         }, $this->resolveNoticeList());
 
-        return view('audit-sdk::notices', ['notices' => $notices, 'level' => $this->level]);
+        return view('audit-sdk::notices', ['notices' => $notices, 'level' => $this->level, 'toc' => $this->toc]);
     }
 
     /** Push every heading in the copy down by $by levels (capped at h6). */

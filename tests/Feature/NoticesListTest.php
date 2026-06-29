@@ -89,3 +89,23 @@ it('nests deeper when given a higher level', function () {
     expect($html)->toContain('<h3>Email marketing</h3>')   // activity at h3
         ->and($html)->toContain('<h4>What we collect</h4>'); // copy heading shifted to h4
 });
+
+it('gives each section a stable id and omits the contents list by default', function () {
+    Http::fake(['platform.test/notices/*' => Http::response(fakeNoticesResponse(), 200)]);
+
+    $html = Blade::render('<x-audit-notices />');
+
+    expect($html)->toContain('id="notice-email_marketing"')
+        ->and($html)->not->toContain('audit-notices-toc');
+});
+
+it('prepends a jump-link contents list when :toc is set', function () {
+    Http::fake(['platform.test/notices/*' => Http::response(fakeNoticesResponse(), 200)]);
+
+    $html = Blade::render('<x-audit-notices :toc="true" />');
+
+    expect($html)->toContain('audit-notices-toc')
+        ->and($html)->toContain('href="#notice-analytics"')
+        ->and($html)->toContain('href="#notice-email_marketing"')
+        ->and($html)->toContain('id="notice-email_marketing"'); // the link target exists
+});

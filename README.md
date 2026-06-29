@@ -259,6 +259,15 @@ document outline stays correct. Embedding deeper in your page? Pass `:level` to 
 whole block — `<x-audit-notices :level="3" />` renders activity names as `<h3>` and copy
 headings as `<h4>`.
 
+Every section gets a stable `id="notice-{activity_key}"` for deep-linking, and `:toc` prepends
+a jump-link contents list:
+
+```blade
+<x-audit-notices :toc="true" />
+```
+
+The `<nav class="audit-notices-toc">` is unstyled markup — style it to taste in your own CSS.
+
 The platform owns the *per-activity processing copy*; the *controller-level* content
 (your identity, DPO, the rights section, how to complain to the supervisory authority)
 stays yours — wrap the component with it.
