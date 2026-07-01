@@ -59,4 +59,20 @@ return [
 
     'notice_ttl' => (int) env('AUDIT_SDK_NOTICE_TTL', 300),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Log scan
+    |--------------------------------------------------------------------------
+    |
+    | Which log files `audit:scan-logs` reads when looking for personal data.
+    | Directories are scanned for their *.log files. The scan runs locally and
+    | never transmits log contents anywhere — it only reports where and what
+    | kind of personal data was found, with the values redacted.
+    |
+    */
+
+    'log_scan' => [
+        'paths' => [storage_path('logs')],
+    ],
+
 ];
