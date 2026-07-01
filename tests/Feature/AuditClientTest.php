@@ -69,3 +69,38 @@ it('posts a signed, counts-only log scan to /log-scan/{project}', function () {
             && str_contains($body, '"type":"email"');
     });
 });
+
+it('dispatches PushAccepted with the payload on a 202', function () {
+    Illuminate\Support\Facades\Event::fake();
+    Http::fake(['platform.test/ingest/*' => Http::response(['status' => 'accepted'], 202)]);
+
+    Audit::push($this->payload);
+
+    Illuminate\Support\Facades\Event::assertDispatched(Syon\AuditSdk\Events\PushAccepted::class, function ($e) {
+        return $e->payload->pushId() === 'push_abcd1234' && $e->result->accepted();
+    });
+    Illuminate\Support\Facades\Event::assertNotDispatched(Syon\AuditSdk\Events\PushRejected::class);
+});
+
+it('dispatches PushRejected on a deterministic rejection (401/422)', function () {
+    Illuminate\Support\Facades\Event::fake();
+    Http::fake(['platform.test/ingest/*' => Http::response(['error' => 'non_conforming_payload'], 422)]);
+
+    Audit::push($this->payload);
+
+    Illuminate\Support\Facades\Event::assertDispatched(Syon\AuditSdk\Events\PushRejected::class, function ($e) {
+        return $e->payload->pushId() === 'push_abcd1234' && $e->result->rejected();
+    });
+    Illuminate\Support\Facades\Event::assertNotDispatched(Syon\AuditSdk\Events\PushAccepted::class);
+});
+
+it('dispatches PushFailed and still throws on a transport failure', function () {
+    Illuminate\Support\Facades\Event::fake();
+    Http::fake(fn () => throw new Illuminate\Http\Client\ConnectionException('boom'));
+
+    expect(fn () => Audit::push($this->payload))->toThrow(Syon\AuditSdk\Exceptions\TransportException::class);
+
+    Illuminate\Support\Facades\Event::assertDispatched(Syon\AuditSdk\Events\PushFailed::class, function ($e) {
+        return $e->payload->pushId() === 'push_abcd1234' && $e->exception instanceof Illuminate\Http\Client\ConnectionException;
+    });
+});

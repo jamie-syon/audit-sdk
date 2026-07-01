@@ -30,6 +30,7 @@ class AuditSdkServiceProvider extends ServiceProvider
                 signer: new RequestSigner((string) ($config['push_secret'] ?? '')),
                 timeout: (int) ($config['timeout'] ?? 10),
                 retries: (int) ($config['retries'] ?? 2),
+                events: $app['events'],
             );
         });
 

@@ -2,9 +2,13 @@
 
 namespace Syon\AuditSdk\Client;
 
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Syon\AuditSdk\Catalogue\Catalogue;
+use Syon\AuditSdk\Events\PushAccepted;
+use Syon\AuditSdk\Events\PushFailed;
+use Syon\AuditSdk\Events\PushRejected;
 use Syon\AuditSdk\Exceptions\TransportException;
 use Syon\AuditSdk\Notice\Notice;
 use Syon\AuditSdk\Notice\PolicyNotice;
@@ -31,6 +35,9 @@ class AuditClient
         private RequestSigner $signer,
         private int $timeout = 10,
         private int $retries = 2,
+        // Optional so pure (non-Laravel) unit tests can construct the client without a
+        // container; when present, push outcomes are dispatched as events.
+        private ?Dispatcher $events = null,
     ) {}
 
     public function push(PushPayload $payload): IngestResult
@@ -56,13 +63,23 @@ class AuditClient
                 ->retry(max(1, $this->retries), 200, throw: false)
                 ->post('/ingest/'.$this->projectId);
         } catch (ConnectionException $e) {
+            $this->events?->dispatch(new PushFailed($payload, $e));
+
             throw new TransportException(
                 "Could not reach the audit platform at {$this->baseUrl}: {$e->getMessage()}",
                 previous: $e,
             );
         }
 
-        return IngestResult::fromStatus($response->status(), (array) $response->json());
+        $result = IngestResult::fromStatus($response->status(), (array) $response->json());
+
+        // Fire from the client so every push path (the scheduled command, a manual
+        // Audit::push(), a future queued job) reports the same outcome.
+        $this->events?->dispatch($result->accepted()
+            ? new PushAccepted($payload, $result)
+            : new PushRejected($payload, $result));
+
+        return $result;
     }
 
     /**

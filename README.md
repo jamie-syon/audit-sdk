@@ -126,6 +126,24 @@ Schedule::command('audit:push')->daily()->withoutOverlapping();
 (unbound provider, rejected payload, bad signature, unreachable platform) — so cron/CI alerting
 catches a broken push. Run it by hand any time to send immediately.
 
+### Reacting to pushes
+
+Every push dispatches an event from the client, so your app can react wherever the push came
+from (the scheduled command, a manual `Audit::push()`, a queued job):
+
+- `Syon\AuditSdk\Events\PushAccepted` — platform accepted it (202). Carries the full
+  `$event->payload` (with `->pushId()`) and `$event->result` — correlate by `push_id` to
+  advance your own watermarks against exactly what was reported.
+- `Syon\AuditSdk\Events\PushRejected` — deterministic rejection (401/422); `$event->result`.
+- `Syon\AuditSdk\Events\PushFailed` — couldn't reach the platform; `$event->exception`.
+
+```php
+Event::listen(PushAccepted::class, function (PushAccepted $e) {
+    // e.g. commit the watermark you staged when building this push_id
+    MyPushLog::where('push_id', $e->payload->pushId())->update(['accepted_at' => now()]);
+});
+```
+
 ## Discovering what to push
 
 The platform knows the canonical activity keys and collection-point slugs it
