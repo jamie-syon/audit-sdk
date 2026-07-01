@@ -2,6 +2,8 @@
 @if (! empty($notices))
     @php($tag = 'h'.$level)
     <div {{ $attributes->merge(['class' => 'audit-notices']) }}>
+        {{-- Controller identity heads the policy (Article 13(1)(a)); null/suppressed renders nothing. --}}
+        @include('audit-sdk::controller', ['controller' => $controllerDetails ?? null, 'level' => $level, 'heading' => 'Who we are and how to contact us'])
         @if ($toc)
             <nav class="audit-notices-toc" aria-label="Contents">
                 <ul>

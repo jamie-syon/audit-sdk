@@ -10,6 +10,7 @@ use Syon\AuditSdk\Events\PushAccepted;
 use Syon\AuditSdk\Events\PushFailed;
 use Syon\AuditSdk\Events\PushRejected;
 use Syon\AuditSdk\Exceptions\TransportException;
+use Syon\AuditSdk\Notice\ControllerDetails;
 use Syon\AuditSdk\Notice\Notice;
 use Syon\AuditSdk\Notice\PolicyNotice;
 use Syon\AuditSdk\Payload\PushPayload;
@@ -230,6 +231,39 @@ class AuditClient
             static fn (array $notice): PolicyNotice => PolicyNotice::fromArray($notice),
             $items,
         ));
+    }
+
+    /**
+     * Fetch the data controller identity + contact details for the project (Article
+     * 13(1)(a)/(b)), served alongside the notices. Null when none have been captured.
+     */
+    public function controllerDetails(): ?ControllerDetails
+    {
+        $signed = $this->signer->sign('');
+
+        try {
+            $response = Http::baseUrl($this->baseUrl)
+                ->timeout($this->timeout)
+                ->withHeaders([
+                    'X-Timestamp' => $signed['timestamp'],
+                    'X-Signature' => $signed['signature'],
+                ])
+                ->retry(max(1, $this->retries), 200, throw: false)
+                ->get('/notices/'.$this->projectId);
+        } catch (ConnectionException $e) {
+            throw new TransportException(
+                "Could not reach the audit platform at {$this->baseUrl}: {$e->getMessage()}",
+                previous: $e,
+            );
+        }
+
+        if ($response->status() !== 200) {
+            throw new TransportException("Notices request failed ({$response->status()}).");
+        }
+
+        $controller = ((array) $response->json())['controller'] ?? null;
+
+        return is_array($controller) ? ControllerDetails::fromArray($controller) : null;
     }
 
     public function projectId(): string

@@ -4,6 +4,7 @@ namespace Syon\AuditSdk\View\Concerns;
 
 use Illuminate\Support\Facades\Cache;
 use Syon\AuditSdk\Client\AuditClient;
+use Syon\AuditSdk\Notice\ControllerDetails;
 use Syon\AuditSdk\Notice\PolicyNotice;
 
 /**
@@ -83,5 +84,34 @@ trait FetchesNotice
         }
 
         return $data;
+    }
+
+    /**
+     * The project's data controller identity + contact details (Article 13(1)(a)/(b)),
+     * cached and fail-soft. Null when none have been captured. The result is wrapped in
+     * an array so a legitimate "no controller" (null) still caches rather than re-fetching.
+     */
+    protected function resolveController(): ?ControllerDetails
+    {
+        $client = app(AuditClient::class);
+        $key = 'audit-sdk:controller:'.$client->projectId();
+        $ttl = (int) config('audit-sdk.notice_ttl', 300);
+
+        $cached = Cache::get($key);
+        if (is_array($cached) && array_key_exists('controller', $cached)) {
+            return $cached['controller'];
+        }
+
+        try {
+            $controller = $client->controllerDetails();
+            Cache::put($key, ['controller' => $controller], $ttl);
+            Cache::forever($key.':last', ['controller' => $controller]);
+
+            return $controller;
+        } catch (\Throwable) {
+            $last = Cache::get($key.':last');
+
+            return is_array($last) ? ($last['controller'] ?? null) : null;
+        }
     }
 }

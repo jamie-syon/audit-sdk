@@ -29,6 +29,7 @@ class AuditNotices extends Component
         public int $level = 2,
         public bool $toc = false,
         public bool $collapsible = false,
+        public bool $controller = true,
     ) {}
 
     public function render(): View
@@ -48,6 +49,9 @@ class AuditNotices extends Component
             'level' => $this->level,
             'toc' => $this->toc,
             'collapsible' => $this->collapsible,
+            // The controller identity heads the policy (Article 13(1)(a)); suppress with :controller="false".
+            // Distinct key so it doesn't collide with the $controller bool prop in the view scope.
+            'controllerDetails' => $this->controller ? $this->resolveController() : null,
         ]);
     }
 

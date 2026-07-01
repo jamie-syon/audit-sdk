@@ -308,6 +308,18 @@ or 14 copy), in lockstep with what's adopted on the platform. It's **per activit
 form** — so notices aren't repeated across collection points, and activities with no form
 (indirect/Article 14 processing) are still included. Cached and fail-soft like the others.
 
+It also **heads the policy with the data controller identity** (Article 13(1)(a)/(b)) —
+the controller(s), any joint-controller arrangement, the DPO, and UK/EU representatives —
+pulled from the platform. Suppress it with `:controller="false"`. To render that block on
+its own (a footer, a contact page, a single form's notice), use the standalone component:
+
+```blade
+<x-audit-controller />                     {{-- heading at <h2> --}}
+<x-audit-controller :level="3" heading="Data controller" />
+```
+
+It renders nothing when no controller has been captured on the platform.
+
 The activity name is an `<h2>` and the copy's own headings are pushed down to `<h3>` so the
 document outline stays correct. Embedding deeper in your page? Pass `:level` to rebase the
 whole block — `<x-audit-notices :level="3" />` renders activity names as `<h3>` and copy
