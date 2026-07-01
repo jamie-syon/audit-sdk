@@ -66,6 +66,43 @@ class AuditClient
     }
 
     /**
+     * Push a log-scan summary to the platform:
+     *
+     *     POST {base_url}/log-scan/{project_id}
+     *
+     * Counts and locations only — the report carries no matched values, so no
+     * personal data leaves the application. Backs central visibility of the
+     * `audit:scan-logs` findings.
+     *
+     * @param  array{scanned_at?: string, findings: list<array{type: string, label: string, file: string, line: int}>}  $report
+     */
+    public function pushLogScan(array $report): IngestResult
+    {
+        $body = (string) json_encode($report, JSON_UNESCAPED_SLASHES);
+
+        $signed = $this->signer->sign($body);
+
+        try {
+            $response = Http::baseUrl($this->baseUrl)
+                ->timeout($this->timeout)
+                ->withHeaders([
+                    'X-Timestamp' => $signed['timestamp'],
+                    'X-Signature' => $signed['signature'],
+                ])
+                ->withBody($body, 'application/json')
+                ->retry(max(1, $this->retries), 200, throw: false)
+                ->post('/log-scan/'.$this->projectId);
+        } catch (ConnectionException $e) {
+            throw new TransportException(
+                "Could not reach the audit platform at {$this->baseUrl}: {$e->getMessage()}",
+                previous: $e,
+            );
+        }
+
+        return IngestResult::fromStatus($response->status(), (array) $response->json());
+    }
+
+    /**
      * Fetch the platform's integration catalogue: the canonical activity keys,
      * collection-point slugs, and in-force LIA version per activity. Read-only —
      * use it to configure what you push, never to set the lia_version you report.

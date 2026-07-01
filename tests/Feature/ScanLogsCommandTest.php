@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Http;
 
 function commandLogDir(string $contents): string
 {
@@ -49,6 +50,24 @@ it('emits machine-readable findings with --json', function () {
     expect($code)->toBe(1)
         ->and($output)->toContain('"type": "email"')
         ->and($output)->not->toContain('alice@example.com');
+
+    dropCommandLogDir($dir);
+});
+
+it('pushes a counts-only summary to the platform with --push, without leaking values', function () {
+    Http::fake(['platform.test/log-scan/*' => Http::response(['status' => 'accepted'], 202)]);
+    $dir = commandLogDir('production.ERROR: login failed for alice@example.com');
+
+    $code = Artisan::call('audit:scan-logs', ['--path' => [$dir], '--push' => true]);
+
+    Http::assertSent(function ($request) {
+        $body = $request->data();
+
+        return str_contains($request->url(), '/log-scan/proj_123')
+            && ($body['findings'][0]['type'] ?? null) === 'email'
+            && ! str_contains($request->body(), 'alice@example.com'); // counts/locations only
+    });
+    expect($code)->toBe(1); // findings present → non-zero exit
 
     dropCommandLogDir($dir);
 });

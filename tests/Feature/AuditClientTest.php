@@ -48,3 +48,24 @@ it('maps 422 to rejected', function () {
     expect($result->rejected())->toBeTrue()
         ->and($result->error())->toBe('non_conforming_payload');
 });
+
+it('posts a signed, counts-only log scan to /log-scan/{project}', function () {
+    Http::fake(['platform.test/log-scan/*' => Http::response(['status' => 'accepted'], 202)]);
+
+    $result = Audit::pushLogScan([
+        'scanned_at' => '2026-07-01T10:00:00+00:00',
+        'findings' => [['type' => 'email', 'label' => 'Email address', 'file' => 'storage/logs/laravel.log', 'line' => 42]],
+    ]);
+
+    expect($result->accepted())->toBeTrue();
+
+    Http::assertSent(function ($request) {
+        $body = $request->body();
+        $expectedSig = hash_hmac('sha256', $request->header('X-Timestamp')[0].'.'.$body, 'test-secret-key');
+
+        return $request->url() === 'https://platform.test/log-scan/proj_123'
+            && $request->method() === 'POST'
+            && $request->header('X-Signature')[0] === $expectedSig
+            && str_contains($body, '"type":"email"');
+    });
+});

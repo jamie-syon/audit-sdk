@@ -163,6 +163,41 @@ foreach ($catalogue->activities as $activity) {
 > detect when you've fallen behind an in-force LIA. The catalogue is read-only and
 > never wired into the push path.
 
+## Scanning your logs for personal data
+
+Logs are a data store too — usually with no retention policy, lawful basis, or
+notice. `audit:scan-logs` scans your log files for personal data that shouldn't be
+sitting in them (emails, credentials/secrets, UK National Insurance numbers, and
+Luhn-checked payment card numbers):
+
+```bash
+php artisan audit:scan-logs
+```
+
+It reads the paths in `config('audit-sdk.log_scan.paths')` (defaults to
+`storage/logs`), reports each hit as *type · file · line · redacted context*, and
+**exits non-zero** when anything is found — so it can gate CI. Matched values are
+redacted in the output: the scan runs entirely locally and never transmits log
+contents anywhere.
+
+- `--path=…` — scan specific files or directories (repeatable).
+- `--json` — machine-readable output.
+- `--push` — send a **counts-and-locations-only** summary to the platform (never the
+  matched values), so log exposure shows up centrally and clears itself on a clean run.
+
+Run it on a schedule with `--push` to keep the platform's view current:
+
+```php
+Schedule::command('audit:scan-logs --push')->daily()->withoutOverlapping();
+```
+
+The scanner is also usable directly:
+
+```php
+$findings = app(\Syon\AuditSdk\Logs\LogScanner::class)->scan([storage_path('logs')]);
+// [['type' => 'email', 'label' => 'Email address', 'file' => '…', 'line' => 42, 'context' => '… [redacted] …'], …]
+```
+
 ## Rendering notices on your forms
 
 The platform is the source of truth for your Article 13 notice copy — you author,
