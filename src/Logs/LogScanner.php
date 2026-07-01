@@ -31,6 +31,13 @@ class LogScanner
             '/\b(?:password|passwd|pwd|secret|api[_\-]?key|access[_\-]?token|authorization|bearer)\b\s*["\':=]+\s*\S+/i',
             'Credential / secret',
         ],
+        // A personal detail logged under a recognised *key* (structured/JSON context).
+        // Matching the key — not free text — keeps it low-noise: `{"first_name":"Jane"}`
+        // is flagged, but prose like "shipped to Jane Doe" is not.
+        'personal_field' => [
+            '/\b(?:name|first_?name|last_?name|full_?name|surname|forename|given_?name|dob|date_of_birth|phone|mobile|telephone|address|postcode|post_code)\b\s*["\':=]+\s*\S+/i',
+            'Personal detail',
+        ],
     ];
 
     /** Candidate card-shaped digit runs — confirmed with a Luhn check before flagging. */

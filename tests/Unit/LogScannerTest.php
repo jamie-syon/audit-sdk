@@ -59,3 +59,30 @@ it('does not flag digit runs that fail the Luhn check', function () {
 
     dropLogDir($dir);
 });
+
+it('flags a personal detail logged under a recognised key, but not a name in free text', function () {
+    $keyed = logDir(implode("\n", [
+        '[2026-01-01] local.DEBUG: context {"first_name":"Jane","surname":"Doe"}',
+        '[2026-01-01] local.INFO: phone=07700900123',
+    ]));
+    $freeText = logDir('[2026-01-01] production.INFO: Order shipped to Jane Doe in London');
+
+    $keyedTypes = array_map(fn (array $f): string => $f['type'], (new LogScanner)->scan([$keyed]));
+
+    expect($keyedTypes)->toContain('personal_field')                 // "first_name"/"surname"/"phone" keys
+        ->and((new LogScanner)->scan([$freeText]))->toBe([]);         // a name in prose is not matched
+
+    dropLogDir($keyed);
+    dropLogDir($freeText);
+});
+
+it('redacts personal field values so a keyed name never leaks', function () {
+    $dir = logDir('local.DEBUG: user {"first_name":"Jane"}');
+
+    $context = (new LogScanner)->scan([$dir])[0]['context'];
+
+    expect($context)->not->toContain('Jane')
+        ->and($context)->toContain('[redacted]');
+
+    dropLogDir($dir);
+});

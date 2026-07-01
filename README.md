@@ -167,8 +167,9 @@ foreach ($catalogue->activities as $activity) {
 
 Logs are a data store too — usually with no retention policy, lawful basis, or
 notice. `audit:scan-logs` scans your log files for personal data that shouldn't be
-sitting in them (emails, credentials/secrets, UK National Insurance numbers, and
-Luhn-checked payment card numbers):
+sitting in them (emails, credentials/secrets, UK National Insurance numbers,
+Luhn-checked payment card numbers, and personal details logged under a recognised
+key — `first_name`, `surname`, `phone`, `dob`, `address`, and the like):
 
 ```bash
 php artisan audit:scan-logs
