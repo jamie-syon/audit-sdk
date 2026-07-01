@@ -27,15 +27,20 @@ class LogScanner
             '/\b[ABCEGHJ-PRSTW-Z]{2}\s?\d{2}\s?\d{2}\s?\d{2}\s?[A-D]\b/',
             'UK National Insurance number',
         ],
+        // The key/value separator requires a real `:` or `=` (optionally after a closing
+        // quote), so an actual assignment is matched — `"key":"v"`, `key=v`, `key: v` —
+        // but a key that merely ends a quoted list (`"a,b,full_name" https://…`) is not.
         'credential' => [
-            '/\b(?:password|passwd|pwd|secret|api[_\-]?key|access[_\-]?token|authorization|bearer)\b\s*["\':=]+\s*\S+/i',
+            '/\b(?:password|passwd|pwd|secret|api[_\-]?key|access[_\-]?token|authorization|bearer)\b\s*["\']?\s*[:=]\s*\S+/i',
             'Credential / secret',
         ],
         // A personal detail logged under a recognised *key* (structured/JSON context).
         // Matching the key — not free text — keeps it low-noise: `{"first_name":"Jane"}`
-        // is flagged, but prose like "shipped to Jane Doe" is not.
+        // is flagged, but prose like "shipped to Jane Doe" is not. Bare `name` is
+        // deliberately excluded: it's too generic (job/queue/class/option names) and
+        // caused false positives; only unambiguous name keys are matched.
         'personal_field' => [
-            '/\b(?:name|first_?name|last_?name|full_?name|surname|forename|given_?name|dob|date_of_birth|phone|mobile|telephone|address|postcode|post_code)\b\s*["\':=]+\s*\S+/i',
+            '/\b(?:first_?name|last_?name|full_?name|surname|forename|given_?name|dob|date_of_birth|phone|mobile|telephone|address|postcode|post_code)\b\s*["\']?\s*[:=]\s*\S+/i',
             'Personal detail',
         ],
     ];

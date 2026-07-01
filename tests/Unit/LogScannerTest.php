@@ -86,3 +86,27 @@ it('redacts personal field values so a keyed name never leaks', function () {
 
     dropLogDir($dir);
 });
+
+it('ignores a bare "name" key (too generic) but still catches specific name keys', function () {
+    // The real-world false positive: a Flux option list / generic "name" key.
+    $bare = logDir('local.ERROR: Could not find option for value "email,name" flux.js');
+    $specific = logDir('local.DEBUG: {"first_name":"Jane"}');
+
+    expect((new LogScanner)->scan([$bare]))->toBe([])
+        ->and(array_map(fn (array $f): string => $f['type'], (new LogScanner)->scan([$specific])))->toContain('personal_field');
+
+    dropLogDir($bare);
+    dropLogDir($specific);
+});
+
+it('requires a real : or = separator, so a key that merely ends a quoted list is not flagged', function () {
+    // The exact browser.log false positive: an option list whose last item is a known key.
+    $listy = logDir('local.ERROR: Could not find option for value "name,email,full_name" https://app.test/flux.js');
+    $real = logDir('local.DEBUG: {"full_name":"Jane Doe"}'); // a genuine assignment still matches
+
+    expect((new LogScanner)->scan([$listy]))->toBe([])
+        ->and(array_map(fn (array $f): string => $f['type'], (new LogScanner)->scan([$real])))->toContain('personal_field');
+
+    dropLogDir($listy);
+    dropLogDir($real);
+});
